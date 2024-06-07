@@ -1,10 +1,26 @@
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
-from fastapi.responses import RedirectResponse
-from app import test_crud, database, models, schema
+from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
+from app import database, models, schema, userctl, pagectl
 import os
 
 app = FastAPI()
+
+# CORS 설정
+origins = [
+    "http://localhost:3000",  # React 개발 서버 주소
+    # 추가로 허용할 도메인들
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 def get_db():
     db = database.SessionLocal()
@@ -22,37 +38,69 @@ async def getDEV():
     message = "hello"
     return{"message": message} 
 
-@app.get("/tests")
-async def get_tests(db: Session = Depends(get_db)):
-    try:
-        tests = test_crud.get_tests(db)
-        return tests
+@app.post("/createUser/")
+async def createUser(user_db:schema.User_Create, db:Session=Depends(get_db)):
+    response = userctl.create_user(db, user_db)
+    return {"response": response}
+
+@app.post("/login/")
+async def login(user_db: schema.User_Create, db: Session = Depends(get_db)):
+    # 입력된 비밀번호를 해싱하여 비밀번호 비교에 사용
+    user_db.password = userctl.hash_password(user_db.password)
     
-    except:
-        return HTTPException(status_code=404, detail="db not found")
-
-@app.get("/tests/{test_id}")
-async def get_tests(test_id: int, db: Session = Depends(get_db)):
-    try:
-        tests = test_crud.get_test(db, test_id)
-        return tests
+    # db user 가져옴
+    user_compare = userctl.get_user(db, user_db.user_id)
     
-    except:
-        return HTTPException(status_code=404, detail="db not found")
+    # 사용자 정보가 없거나 비밀번호가 일치하지 않으면 로그인 실패
+    if not user_compare or user_compare.password != user_db.password:
+        response = False
+    else:
+        response = True
+    
+    return {"response": response}
 
 
-@app.post("/tests/")
-async def create_test(test_db:schema.TestCreate, db:Session=Depends(get_db)):
-    db_test = test_crud.create_test(db, test_db)
-    return db_test
+#########
+#Page DB
 
-@app.put("/tests/{test_id}")
-async def update_test(test_id:int, updated_test: schema.TestCreate, db:Session=Depends(get_db)):
-    db_test = test_crud.get_test(db, test_id)
-    if db_test is None:
-        raise HTTPException(status_code=404, detail="Item not found")
-    result = test_crud.update_test(db, db_test, updated_test)
-    return result
+@app.get("/dfplt/{user_id}/{page_id}/")
+async def get_dfplt(user_id: str, page_id: str):
+    file_path = f"./plot/dfplt/{user_id}-{page_id}-df.png"
+    # 이미지 파일이 존재하는지 확인
+    if not os.path.exists(file_path):
+        return {"error": "File not found"}
+
+    return FileResponse(file_path, media_type='image/png')
+
+@app.get("/decomposeplt/{user_id}/{page_id}/")
+async def get_decomposeplt(user_id: str, page_id: str):
+    file_path = f"./plot/decomposeplt/{user_id}-{page_id}-decompose.png"
+    # 이미지 파일이 존재하는지 확인
+    if not os.path.exists(file_path):
+        return {"error": "File not found"}
+
+    return FileResponse(file_path, media_type='image/png')
+
+@app.get("/predictplt/{user_id}/{page_id}/")
+async def get_decomposeplt(user_id: str, page_id: str):
+    file_path = f"./plot/predictplt/{user_id}-{page_id}-predict.png"
+    # 이미지 파일이 존재하는지 확인
+    if not os.path.exists(file_path):
+        return {"error": "File not found"}
+
+    return FileResponse(file_path, media_type='image/png')
+
+@app.get("/createPage/{user_id}/")
+async def createPage(user_id: str, keyword: str, db: Session = Depends(get_db)) :
+    response = pagectl.create_page(db, user_id, keyword)
+    
+    return {"response": response}
+
+@app.get("/userPage/{user_id}/")
+async def createPage(user_id: str, db: Session = Depends(get_db)) :
+    response = pagectl.get_userPage(db, user_id)
+
+    return {"response": response}
 
 
 if __name__ == "__main__":

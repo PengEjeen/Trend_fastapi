@@ -1,15 +1,16 @@
 from pydantic import BaseModel
 
-class TestBase(BaseModel):
-    name: str
-    description: str
-    price: int
+class User_Create(BaseModel):
+    user_id: str
+    password: str
 
-class TestCreate(TestBase):
-    pass
+class Page_Create(BaseModel):
+    user_id: str
+    page_id: str
+    keyword: str
+    df_plot: str
+    decompose_plot: str
+    predict_plot: str
+    test_result: dict
 
-class Test(TestBase):
-    id: int
 
-    class Config:
-        orm_mode = True
