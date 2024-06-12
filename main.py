@@ -2,14 +2,18 @@ from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from app import database, models, schema, userctl, pagectl
+from app import database, models, schema, userctl, pagectl, naverSearch
 import os
 
 app = FastAPI()
 
 # CORS 설정
 origins = [
-    "http://localhost:3000",  # React 개발 서버 주소
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3000",
+    "http://172.25.101.250:3000"
+        # React 개발 서버 주소
     # 추가로 허용할 도메인들
 ]
 
@@ -100,6 +104,18 @@ async def createPage(user_id: str, keyword: str, db: Session = Depends(get_db)) 
 async def createPage(user_id: str, db: Session = Depends(get_db)) :
     response = pagectl.get_userPage(db, user_id)
 
+    return {"response": response}
+
+@app.get("/getNews/{keyword}")
+async def getNews(keyword):
+    response = naverSearch.get_news(keyword)
+    
+    return {"response": response}
+
+@app.get("/getBlog/{keyword}")
+async def getBlog(keyword):
+    response = naverSearch.get_blog(keyword)
+    
     return {"response": response}
 
 

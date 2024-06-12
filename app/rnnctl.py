@@ -6,6 +6,7 @@ from datetime import datetime
 from statsmodels.tsa.seasonal import seasonal_decompose
 import numpy as np
 from sklearn.model_selection import train_test_split
+import seaborn as sns
 
 SEQLEN = 10
 
@@ -61,7 +62,13 @@ def get_df(keyword):
 def save_dfPlot(df, path):
     try:
         print("save df plot")
-        plt.plot(df["ratio"])
+        sns.set(style="whitegrid")
+        sns.lineplot(x='period', y='ratio', data=df, marker='', color='b', linewidth=2.5)
+
+            # 그래프 제목과 라벨 추가
+        plt.title('DF Plot', fontsize=18)
+        plt.xlabel('Date', fontsize=14)
+        plt.ylabel('Ratio', fontsize=14)
         plt.savefig(path)
         plt.close()
 
@@ -75,7 +82,27 @@ def save_decomposePlot(df, path):
         print("save df decompose plot")
         result = seasonal_decompose(df, model='additive')
         plt.rcParams['figure.figsize'] = [12, 8]
-        result.plot()
+        
+        # 각 구성 요소에 대해 서브플롯을 생성
+        fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, sharex=True)
+
+        result.observed.plot(ax=ax1, color='b', title='Observed')
+        ax1.set_ylabel('Observed')
+
+        result.trend.plot(ax=ax2, color='r', title='Trend')
+        ax2.set_ylabel('Trend')
+
+        result.seasonal.plot(ax=ax3, color='g', title='Seasonal')
+        ax3.set_ylabel('Seasonal')
+
+        result.resid.plot(ax=ax4, color='m', title='Residual')
+        ax4.set_ylabel('Residual')
+        ax4.set_xlabel('Period')
+
+        # 그래프 제목과 레이아웃 설정
+        fig.suptitle('Decomeposition', fontsize=16)
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        
         plt.savefig(path)
         plt.close()
 
@@ -150,8 +177,23 @@ def save_modelPredict(model, x_test_uni, path):
         input_data[-1] = next_prediction
 
     plt.plot(predicted_data, label='predict')
-    plt.savefig(path)
+    plt.figure(figsize=(14, 7))
+    #plot
+    plt.plot(predicted_data, label='Predicted', color='r', linestyle='--', linewidth=2)
+    #라벨링
+    plt.title('Actual vs Predicted Data', fontsize=16)
+    plt.xlabel('Day', fontsize=14)
+    plt.ylabel('Ratio', fontsize=14)
+
+    #범례 추가
+    plt.legend(loc='upper left', fontsize=12)
     
+    # 격자 추가
+    plt.grid(True)
+    
+    plt.savefig(path)
+    plt.close()
+
     return predicted_data
 
 
