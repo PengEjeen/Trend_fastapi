@@ -2,4 +2,6 @@ pymysql
 sqlalchemy
 uvicorn
 fastapi
+tensorflow
+seaborn
 
